@@ -1,0 +1,10 @@
+# ideas
+.idea
+
+# File types
+*.png
+*.jpg
+*.json
+
+# Hidden files
+.*
