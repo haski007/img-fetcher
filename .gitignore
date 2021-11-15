@@ -5,6 +5,10 @@
 *.png
 *.jpg
 *.json
+*.html
+
+# executables
+*.exe
 
 # Hidden files
 .*

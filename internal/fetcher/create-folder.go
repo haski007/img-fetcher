@@ -1,29 +1,49 @@
 package fetcher
 
 import (
+	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/haski007/img-fetcher/internal/fetcher/model"
+
+	"github.com/sirupsen/logrus"
 )
 
-func CreateFolder(r Resource) error {
-	if err := os.Mkdir(r.GetTitle(), 0755); err != nil {
+func CreateFolder(ctx context.Context, r Resource, language model.Language) error {
+	// ---> create directory
+	folderName := strings.ReplaceAll(strings.ReplaceAll(r.GetTitle(), string(os.PathSeparator), "-"), " ", "_")
+	folderName = strings.ReplaceAll(folderName, "/", "-")
+	if err := os.Mkdir(folderName, 0755); err != nil {
 		return fmt.Errorf("os mkdir err: %w", err)
 	}
 
+	// ---> download images
 	for i, image := range r.GetImages() {
 		extention := strings.Split(image, ".")[len(strings.Split(image, "."))-1]
-		if err := downloadFile(image, fmt.Sprintf("./%s/%d.%s", r.GetTitle(), i, extention)); err != nil {
+		if err := downloadFile(image, fmt.Sprintf("./%s/%d.%s", folderName, i, extention)); err != nil {
 			err = fmt.Errorf("download file err: %w", err)
-			if errf := os.Remove(r.GetTitle()); errf != nil {
-				err = fmt.Errorf("%w failed to remove created folder err: %w", err, errf)
+			if errf := os.Remove(folderName); errf != nil {
+				err = fmt.Errorf("%s failed to remove created folder err: %w", err, errf)
 			}
 			return err
 		}
 	}
+
+	// ---> create specs file
+	translatedText, err := r.GetSpecificationsTxt(ctx, language)
+	if err != nil {
+		return fmt.Errorf("[GetSpecificationsTxt] err: %w", err)
+	}
+	specsFileName := folderName + string(os.PathSeparator) + "specs.txt"
+	if err := ioutil.WriteFile(specsFileName, []byte(translatedText), 0644); err != nil {
+		logrus.Errorf("create and write file [%s] err: %s", specsFileName, err)
+	}
+
 	logrus.Printf("Created new folder `%s` with %d images", r.GetTitle(), len(r.GetImages()))
 	return nil
 }
