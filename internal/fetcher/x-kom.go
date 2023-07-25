@@ -36,30 +36,20 @@ func (rcv *Fetcher) XKom(ctx context.Context, pageUrl string) error {
 	// ---> fetch specifications
 	var specs = make(map[string]string)
 	document.Find(fmt.Sprintf("body .%s", model.XKomSpecsClass)).
-		Each(func(i int, specsHtml *goquery.Selection) {
-			specsHtml.Children().Each(func(i int, rowHtml *goquery.Selection) {
-				var key, value string
-				rowHtml.Children().Each(func(i int, keyValueHtml *goquery.Selection) {
-					if keyValueHtml.HasClass(model.XKomSpecsClass_Value) {
-						keyValueHtml.Children().Each(func(i int, valueHtml *goquery.Selection) {
-							value += " - " + strings.TrimSpace(valueHtml.Text()) + "\n"
-						})
-					} else {
-						key = keyValueHtml.Text()
-					}
-				})
+		Each(func(i int, row *goquery.Selection) {
+			key := row.Children().Find(fmt.Sprintf(".%s", model.XKomSpecsClass_Key)).Text()
+			value := row.Children().Find(fmt.Sprintf(".%s", model.XKomSpecsClass_Value)).Text()
 
-				if key == "" || value == "" {
-					if value == "" && key == "" {
-						return
-					} else if value == "" && key != "" {
-						logrus.Errorf("there are no value for key: %s", key)
-					} else {
-						logrus.Errorf("there are no key for value: %s", value)
-					}
+			if key == "" || value == "" {
+				if value == "" && key == "" {
+					return
+				} else if value == "" && key != "" {
+					logrus.Errorf("there are no value for key: %s", key)
+				} else {
+					logrus.Errorf("there are no key for value: %s", value)
 				}
-				specs[key] = value
-			})
+			}
+			specs[key] = value
 		})
 
 	xkom.Specifications = specs
