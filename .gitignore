@@ -12,3 +12,7 @@
 
 # Hidden files
 .*
+
+fetcher
+fetcher.exe
+fetcher_unix

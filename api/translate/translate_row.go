@@ -3,7 +3,7 @@ package translate
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -31,8 +31,9 @@ func Row(client *http.Client, row, sourceLang, targetLang string) (translated st
 	if err != nil {
 		return "", fmt.Errorf("http client do err: %s", err)
 	}
+	defer rsp.Body.Close()
 
-	data, err := ioutil.ReadAll(rsp.Body)
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return "", fmt.Errorf("read response body err: %s", err)
 	}
@@ -41,7 +42,6 @@ func Row(client *http.Client, row, sourceLang, targetLang string) (translated st
 		logrus.Errorf(string(data))
 		return "", fmt.Errorf("status code is not 200 status: %s", rsp.Status)
 	}
-	defer rsp.Body.Close()
 
 	var face []interface{}
 

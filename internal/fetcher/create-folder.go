@@ -14,20 +14,40 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func folderExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
+}
+
 func CreateFolder(ctx context.Context, r Resource, language model.Language) error {
 	// ---> create directory
-	folderName := strings.ReplaceAll(strings.ReplaceAll(r.GetTitle(), string(os.PathSeparator), "-"), " ", "_")
-	folderName = strings.ReplaceAll(folderName, "/", "-")
-	if err := os.Mkdir(folderName, 0755); err != nil {
+	dirName := strings.ReplaceAll(strings.ReplaceAll(r.GetTitle(), string(os.PathSeparator), "-"), " ", "_")
+	dirName = strings.ReplaceAll(dirName, "/", "-")
+
+	folderNameExists := folderExists(dirName)
+	var i = 0
+	for folderNameExists {
+		i++
+		folderNameExists = folderExists(fmt.Sprintf("%s_%d", dirName, i))
+	}
+
+	if i > 0 {
+		dirName = fmt.Sprintf("%s_%d", dirName, i)
+	}
+
+	if err := os.Mkdir(dirName, 0755); err != nil {
 		return fmt.Errorf("os mkdir err: %w", err)
 	}
 
 	// ---> download images
 	for i, image := range r.GetImages() {
 		extention := strings.Split(image, ".")[len(strings.Split(image, "."))-1]
-		if err := downloadFile(image, fmt.Sprintf("./%s/%d.%s", folderName, i, extention)); err != nil {
+		if err := downloadFile(image, fmt.Sprintf("./%s/%d.%s", dirName, i, extention)); err != nil {
 			err = fmt.Errorf("download file err: %w", err)
-			if errf := os.Remove(folderName); errf != nil {
+			if errf := os.Remove(dirName); errf != nil {
 				err = fmt.Errorf("%s failed to remove created folder err: %w", err, errf)
 			}
 			return err
@@ -39,7 +59,7 @@ func CreateFolder(ctx context.Context, r Resource, language model.Language) erro
 	if err != nil {
 		return fmt.Errorf("[GetSpecificationsTxt] err: %w", err)
 	}
-	specsFileName := folderName + string(os.PathSeparator) + "specs.txt"
+	specsFileName := dirName + string(os.PathSeparator) + "specs.txt"
 	if err := ioutil.WriteFile(specsFileName, []byte(translatedText), 0644); err != nil {
 		logrus.Errorf("create and write file [%s] err: %s", specsFileName, err)
 	}
