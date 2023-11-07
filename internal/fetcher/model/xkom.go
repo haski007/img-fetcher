@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	XKomSpecsClass       = "iFAJlN"
+	XKomSpecsClass       = "VGBov"
 	XKomSpecsClass_Key   = "sc-13p5mv-1"
 	XKomSpecsClass_Value = "UfEQd"
 )
